@@ -1,0 +1,5 @@
+.env
+.env.example
+seed/seed.js
+seed.js
+node_modules
