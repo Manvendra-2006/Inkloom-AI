@@ -13,11 +13,8 @@ export default function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await login(email, password);
-      // After login, redirect based on role (stored in auth context)
-      const token = localStorage.getItem('token');
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (payload.role === 'ADMIN') navigate('/admin/dashboard');
+      const user = await login(email, password);
+      if (user.role === 'ADMIN') navigate('/admin/dashboard');
       else navigate('/employee/dashboard');
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed');

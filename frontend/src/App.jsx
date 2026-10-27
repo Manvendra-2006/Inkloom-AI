@@ -4,10 +4,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import EmployeeDashboard from './pages/EmployeeDashboard';
+import EmployeeSubmissionsPage from './pages/EmployeeSubmissionsPage';
 import CreateAdPage from './pages/CreateAdPage';
 import EmployeeAdDetail from './pages/EmployeeAdDetail';
 import AdminDashboard from './pages/AdminDashboard';
-import GuidelinesPage from './pages/GuidelinesPage';
+import BrandProfile from './pages/BrandProfile';
 import ReviewsPage from './pages/ReviewsPage';
 import SocialPage from './pages/SocialPage';
 import PublishingPage from './pages/PublishingPage';
@@ -15,9 +16,14 @@ import HistoryPage from './pages/HistoryPage';
 import { useAuth } from './context/AuthContext';
 
 function PrivateRoute({ children, allowedRoles }) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) {
+    return <div className="container py-5 text-center" role="status">Loading...</div>;
+  }
   if (!user) return <Navigate to="/login" replace />;
-  if (allowedRoles && !allowedRoles.includes(user.role)) return <Navigate to="/" replace />;
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to={user.role === 'ADMIN' ? '/admin/dashboard' : '/employee/dashboard'} replace />;
+  }
   return children;
 }
 
@@ -47,6 +53,14 @@ export default function App() {
           }
         />
         <Route
+          path="/employee/submissions"
+          element={
+            <PrivateRoute allowedRoles={['EMPLOYEE']}>
+              <EmployeeSubmissionsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/employee/ad/:id"
           element={
             <PrivateRoute allowedRoles={['EMPLOYEE']}>
@@ -65,10 +79,18 @@ export default function App() {
           }
         />
         <Route
+          path="/admin/brand-profiles"
+          element={
+            <PrivateRoute allowedRoles={['ADMIN']}>
+              <BrandProfile />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/admin/guidelines"
           element={
             <PrivateRoute allowedRoles={['ADMIN']}>
-              <GuidelinesPage />
+              <Navigate to="/admin/brand-profiles" replace />
             </PrivateRoute>
           }
         />

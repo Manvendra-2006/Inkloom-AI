@@ -39,8 +39,8 @@ export default function AdminDashboard() {
         ))}
       </div>
       <div className="flex space-x-4 mb-4">
-        <Link to="/admin/guidelines" className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
-          Manage Guidelines
+        <Link to="/admin/brand-profiles" className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+          Manage Brand Profile
         </Link>
         <Link to="/admin/reviews" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
           Review Submissions
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
           Publish Ads
         </Link>
         <Link to="/admin/history" className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">
-          Publishing History
+          History
         </Link>
       </div>
     </MainLayout>

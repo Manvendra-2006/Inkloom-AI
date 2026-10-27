@@ -11,7 +11,7 @@ const links = {
   ],
   ADMIN: [
     { to: '/admin/dashboard', label: 'Dashboard' },
-    { to: '/admin/guidelines', label: 'Guidelines' },
+    { to: '/admin/brand-profiles', label: 'Brand Profile' },
     { to: '/admin/reviews', label: 'Reviews' },
     { to: '/admin/social', label: 'Social Accounts' },
     { to: '/admin/publishing', label: 'Publish' },

@@ -11,4 +11,18 @@ instance.setToken = (token) => {
   else delete instance.defaults.headers.common['Authorization'];
 };
 
+instance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const requestUrl = error.config?.url || '';
+    const isAuthenticationRequest = /\/auth\/(login|register)$/.test(requestUrl);
+    if (error.response?.status === 401 && !isAuthenticationRequest) {
+      localStorage.removeItem('token');
+      instance.setToken(null);
+      window.dispatchEvent(new Event('auth:unauthorized'));
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default instance;

@@ -30,8 +30,8 @@ export default function EmployeeDashboard() {
   return (
     <MainLayout>
       <h1 className="text-2xl font-bold mb-4">Employee Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        {['DRAFT', 'AI_CHECKED', 'CHANGES_REQUIRED', 'PENDING_REVIEW', 'APPROVED', 'PUBLISHED'].map((status) => (
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        {['DRAFT', 'CHANGES_REQUIRED', 'PENDING_REVIEW', 'APPROVED', 'PUBLISHED'].map((status) => (
           <div key={status} className="bg-white p-4 rounded shadow">
             <h2 className="text-lg font-medium">{status.replace('_', ' ')}</h2>
             <p className="text-2xl font-bold">{statusCounts[status] || 0}</p>
@@ -55,6 +55,7 @@ export default function EmployeeDashboard() {
             <tr>
               <th className="px-4 py-2 border">Title</th>
               <th className="px-4 py-2 border">Status</th>
+              <th className="px-4 py-2 border">AI Status</th>
               <th className="px-4 py-2 border">Score</th>
             </tr>
           </thead>
@@ -67,6 +68,7 @@ export default function EmployeeDashboard() {
                   </Link>
                 </td>
                 <td className="px-4 py-2 border">{ad.status}</td>
+                <td className="px-4 py-2 border">{ad.aiStatus ? ad.aiStatus.toUpperCase() : '—'}</td>
                 <td className="px-4 py-2 border">{ad.aiComplianceScore ?? '-'} </td>
               </tr>
             ))}

@@ -1,13 +1,25 @@
 // frontend/src/pages/CreateAdPage.js
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import MainLayout from '../layouts/MainLayout';
 
 export default function CreateAdPage() {
-  const [form, setForm] = useState({ title: '', caption: '', imageUrl: '' });
+  const [form, setForm] = useState({
+    title: '',
+    caption: '',
+    imageUrl: '',
+    brandGuideline: '',
+  });
+  const [profiles, setProfiles] = useState([]);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    api.get('/brand-profiles')
+      .then((res) => setProfiles(res.data))
+      .catch((err) => setError(err.response?.data?.message || 'Failed to load brand profiles'));
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -28,7 +40,30 @@ export default function CreateAdPage() {
     <MainLayout>
       <h1 className="text-2xl font-bold mb-4">Create Advertisement</h1>
       {error && <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">{error}</div>}
+      {profiles.length === 0 && !error && (
+        <p className="bg-yellow-100 text-yellow-800 p-3 mb-4 rounded">
+          An administrator must save a brand profile before an advertisement can be checked.
+        </p>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
+        <div>
+          <label className="block font-medium mb-1">Brand Profile</label>
+          <select
+            name="brandGuideline"
+            value={form.brandGuideline}
+            onChange={handleChange}
+            required
+            disabled={profiles.length === 0}
+            className="w-full border rounded px-3 py-2"
+          >
+            <option value="">Select a brand profile...</option>
+            {profiles.map((profile) => (
+              <option key={profile._id} value={profile._id}>
+                {profile.name} — v{profile.version || '1.0'}
+              </option>
+            ))}
+          </select>
+        </div>
         <div>
           <label className="block font-medium mb-1">Title</label>
           <input
@@ -61,6 +96,7 @@ export default function CreateAdPage() {
         </div>
         <button
           type="submit"
+          disabled={profiles.length === 0}
           className="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700"
         >
           Save Draft

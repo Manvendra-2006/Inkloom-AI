@@ -2,3 +2,45 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.brand-profile-page {
+  color: #e5e7eb;
+  min-height: 100vh;
+  margin: -1.5rem;
+  padding: 1.5rem;
+  background-color: #111827;
+}
+
+.brand-profile-page .card {
+  color: #e5e7eb;
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+.brand-profile-page .form-control,
+.brand-profile-page .form-select {
+  color: #f9fafb;
+  background-color: #111827;
+  border-color: #4b5563;
+}
+
+.brand-profile-page .form-control::placeholder {
+  color: #9ca3af;
+}
+
+.brand-profile-page .form-control:focus,
+.brand-profile-page .form-select:focus {
+  color: #f9fafb;
+  background-color: #111827;
+  border-color: #818cf8;
+  box-shadow: 0 0 0 0.25rem rgb(129 140 248 / 25%);
+}
+
+.brand-profile-page .form-text,
+.brand-profile-page .text-secondary {
+  color: #9ca3af !important;
+}
+
+.brand-profile-page dt {
+  color: #d1d5db;
+}
