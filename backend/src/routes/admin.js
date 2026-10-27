@@ -1,85 +1,14 @@
 // backend/src/routes/admin.js
 const express = require('express');
-const { body, validationResult } = require('express-validator');
 const auth = require('../middleware/auth');
 const role = require('../middleware/role');
-const BrandGuideline = require('../models/BrandGuideline');
 const Review = require('../models/Review');
 const Advertisement = require('../models/Advertisement');
-const PublishingRecord = require('../models/PublishingRecord'); // added import
+const PublishingRecord = require('../models/PublishingRecord');
 const router = express.Router();
 
 // All admin routes require ADMIN role
 router.use(auth, role('ADMIN'));
-
-// ==== Brand Guidelines CRUD ====
-router.get('/guidelines', async (req, res, next) => {
-  try {
-    const guidelines = await BrandGuideline.find();
-    res.json(guidelines);
-  } catch (err) {
-    next(err);
-  }
-});
-
-router.post(
-  '/guidelines',
-  [
-    body('category').isIn([
-      'TONE','TERMINOLOGY','FACTS','CLAIMS','MESSAGING','RESTRICTED_WORDS','BRANDING','ACCESSIBILITY'
-    ]),
-    body('title').notEmpty(),
-    body('description').optional(),
-    body('rule').optional(),
-    body('examples').optional(),
-    body('severity').optional().isIn(['LOW','MEDIUM','HIGH']),
-    body('active').optional().isBoolean(),
-  ],
-  async (req, res, next) => {
-    try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
-      const guideline = new BrandGuideline(req.body);
-      await guideline.save();
-      res.status(201).json(guideline);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-router.put(
-  '/guidelines/:id',
-  [
-    body('category').optional().isIn([
-      'TONE','TERMINOLOGY','FACTS','CLAIMS','MESSAGING','RESTRICTED_WORDS','BRANDING','ACCESSIBILITY'
-    ]),
-    body('title').optional().notEmpty(),
-    body('severity').optional().isIn(['LOW','MEDIUM','HIGH']),
-    body('active').optional().isBoolean(),
-  ],
-  async (req, res, next) => {
-    try {
-      const guideline = await BrandGuideline.findById(req.params.id);
-      if (!guideline) return res.status(404).json({ message: 'Guideline not found' });
-      Object.assign(guideline, req.body);
-      await guideline.save();
-      res.json(guideline);
-    } catch (err) {
-      next(err);
-    }
-  }
-);
-
-router.delete('/guidelines/:id', async (req, res, next) => {
-  try {
-    const result = await BrandGuideline.findByIdAndDelete(req.params.id);
-    if (!result) return res.status(404).json({ message: 'Guideline not found' });
-    res.json({ message: 'Deleted' });
-  } catch (err) {
-    next(err);
-  }
-});
 
 // ==== Review Actions ==== (approve, reject, request changes)
 router.post('/reviews/:adId', async (req, res, next) => {
@@ -108,6 +37,104 @@ router.post('/reviews/:adId', async (req, res, next) => {
     else if (action === 'CHANGES_REQUESTED') ad.status = 'CHANGES_REQUIRED';
     await ad.save();
     res.json({ message: 'Review saved', ad });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/history', async (req, res, next) => {
+  try {
+    const ads = await Advertisement.find()
+      .sort({ createdAt: -1 })
+      .populate('createdBy', 'name email')
+      .populate('brandGuideline', 'name version')
+      .populate('aiReport');
+    const advertisementIds = ads.map((ad) => ad._id);
+
+    const [reviews, publishingRecords] = advertisementIds.length
+      ? await Promise.all([
+        Review.find({ advertisementId: { $in: advertisementIds } })
+          .sort({ createdAt: -1 })
+          .populate('adminId', 'name email'),
+        PublishingRecord.find({ advertisementId: { $in: advertisementIds } })
+          .sort({ publishedAt: -1, createdAt: -1 }),
+      ])
+      : [[], []];
+
+    const reviewsByAdvertisement = new Map();
+    for (const review of reviews) {
+      const key = review.advertisementId.toString();
+      const advertisementReviews = reviewsByAdvertisement.get(key) || [];
+      advertisementReviews.push(review);
+      reviewsByAdvertisement.set(key, advertisementReviews);
+    }
+
+    const latestPublications = new Map();
+    for (const publication of publishingRecords) {
+      const key = publication.advertisementId.toString();
+      if (!latestPublications.has(key)) latestPublications.set(key, publication);
+    }
+
+    const history = ads.map((ad) => {
+      const report = ad.aiReport;
+      const reviewEvents = reviewsByAdvertisement.get(ad._id.toString()) || [];
+      const review = reviewEvents[0];
+      const publication = latestPublications.get(ad._id.toString());
+      const findings = Array.isArray(report?.issues)
+        ? report.issues
+        : Array.isArray(report?.rawResult?.combined_findings)
+          ? report.rawResult.combined_findings
+          : [];
+      const severityOrder = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
+      const severities = findings
+        .map((finding) => String(finding?.severity || '').toUpperCase())
+        .filter((severity) => severityOrder.includes(severity));
+      const highestSeverity = severityOrder.find((severity) => severities.includes(severity)) || null;
+      const dates = [
+        ad.createdAt,
+        report?.checkedAt,
+        review?.createdAt,
+        publication?.publishedAt,
+      ].filter(Boolean)
+        .map((date) => new Date(date))
+        .filter((date) => Number.isFinite(date.getTime()));
+      const latestActivityAt = dates.length
+        ? new Date(Math.max(...dates.map((date) => date.getTime())))
+        : null;
+
+      return {
+        _id: ad._id,
+        title: ad.title,
+        caption: ad.caption || '',
+        creator: ad.createdBy || null,
+        brand: ad.brandGuideline || null,
+        aiStatus: ad.aiStatus || (
+          ['clean', 'no_flags'].includes(report?.status) ? 'clean'
+            : report?.status === 'flagged' ? 'flagged' : null
+        ),
+        score: ad.aiComplianceScore ?? report?.score ?? null,
+        findingCount: report?.finding_count ?? findings.length,
+        severity: highestSeverity,
+        adminAction: review?.action || null,
+        reviewedBy: review?.adminId || null,
+        reviewedAt: review?.createdAt || null,
+        reviewEvents: reviewEvents.map((event) => ({
+          action: event.action,
+          comment: event.comment || '',
+          reviewedBy: event.adminId,
+          createdAt: event.createdAt,
+        })),
+        report: report || null,
+        status: ad.status,
+        createdAt: ad.createdAt,
+        checkedAt: report?.checkedAt || ad.aiCheckedAt || null,
+        publishedAt: publication?.publishedAt || null,
+        publicationStatus: publication?.status || null,
+        latestActivityAt,
+      };
+    });
+
+    res.json(history);
   } catch (err) {
     next(err);
   }

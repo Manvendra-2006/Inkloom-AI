@@ -3,13 +3,11 @@ const mongoose = require('mongoose');
 
 const statusEnum = [
   'DRAFT',
-  'AI_CHECKED',
   'CHANGES_REQUIRED',
   'PENDING_REVIEW',
   'APPROVED',
   'REJECTED',
   'PUBLISHED',
-  'flagged'
 ];
 
 const advertisementSchema = new mongoose.Schema({
@@ -17,8 +15,13 @@ const advertisementSchema = new mongoose.Schema({
   title: { type: String, required: true },
   caption: { type: String },
   imageUrl: { type: String },
+  brandGuideline: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'BrandGuideline',
+    required: function () { return this.isNew; },
+  },
   status: { type: String, enum: statusEnum, default: 'DRAFT' },
-  aiComplianceScore: { type: Number },
+  aiStatus: { type: String, enum: ['flagged', 'clean'] },
   aiComplianceScore: { type: Number },
   aiCheckedAt: { type: Date },
   aiReport: { type: mongoose.Schema.Types.ObjectId, ref: 'ComplianceReport' },

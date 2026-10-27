@@ -8,6 +8,7 @@ const adRoutes = require('./routes/advertisements');
 const adminRoutes = require('./routes/admin');
 const aiRoutes = require('./routes/ai');
 const socialRoutes = require('./routes/social');
+const brandProfileRoutes = require('./routes/brandProfiles');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(morgan('dev'));
 app.use('/api/auth', authRoutes);
 app.use('/api/ads', adRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/brand-profiles', brandProfileRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/social', socialRoutes);
 

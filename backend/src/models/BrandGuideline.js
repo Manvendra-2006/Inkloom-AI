@@ -12,21 +12,32 @@ const categoryEnum = [
   'ACCESSIBILITY',
 ];
 
-const brandGuidelineSchema = new mongoose.Schema({
+const guidelineRuleSchema = new mongoose.Schema({
   category: { type: String, enum: categoryEnum, required: true },
-  title: { type: String, required: true },
-  description: { type: String },
-  rule: { type: String },
-  examples: { type: String },
+  title: { type: String, required: true, trim: true },
+  description: { type: String, default: '' },
+  rule: { type: String, default: '' },
+  examples: { type: String, default: '' },
   severity: { type: String, enum: ['LOW', 'MEDIUM', 'HIGH'], default: 'MEDIUM' },
   active: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now },
-  updatedAt: { type: Date, default: Date.now },
 });
 
-brandGuidelineSchema.pre('save', function (next) {
-  this.updatedAt = Date.now();
-  next();
-});
+const brandGuidelineSchema = new mongoose.Schema({
+  type: { type: String, enum: ['profile'], default: 'profile', required: true },
+  name: { type: String, trim: true, required: true },
+  description: { type: String, required: true, trim: true },
+  toneOfVoice: { type: String, trim: true, required: true },
+  preferredTerminology: {
+    type: [String],
+    default: [],
+  },
+  termsRequiringReview: {
+    type: [String],
+    default: [],
+  },
+  guidelines: { type: [guidelineRuleSchema], default: [] },
+  version: { type: String, default: '1.0' },
+  isActive: { type: Boolean, default: true },
+}, { timestamps: true });
 
 module.exports = mongoose.model('BrandGuideline', brandGuidelineSchema);

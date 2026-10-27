@@ -6,8 +6,8 @@ module.exports = {
   PORT: process.env.PORT || 5000,
   MONGODB_URI: process.env.MONGODB_URI,
   JWT_SECRET: process.env.JWT_SECRET,
-  AI_SERVICE_URL: process.env.AI_SERVICE_URL,
-  AI_MODE: process.env.AI_MODE || 'mock',
+  AI_SERVICE_URL: process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000',
+  AI_MODE: process.env.AI_MODE || 'prod',
   SOCIAL_MEDIA_MODE: process.env.SOCIAL_MEDIA_MODE || 'mock',
   // OAuth credentials (placeholders)
   LINKEDIN_CLIENT_ID: process.env.LINKEDIN_CLIENT_ID,
