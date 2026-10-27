@@ -138,18 +138,6 @@ async function checkAdvertisement(req, res, next) {
       throw error;
     }
 
-    if (
-      aiResult.ai_review?.ai_status === 'unavailable'
-      && aiResult.combined_findings.length === 0
-    ) {
-      await markAiUnavailable(ad);
-      const error = new Error(
-        'AI service unavailable. Please start the FastAPI AI service and try again.'
-      );
-      error.statusCode = 503;
-      throw error;
-    }
-
     const findings = normalizeFindings(aiResult.combined_findings, adData);
     const normalizedResult = {
       ...aiResult,

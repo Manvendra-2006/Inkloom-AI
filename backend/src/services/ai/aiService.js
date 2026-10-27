@@ -42,15 +42,15 @@ async function checkAd(advertisement, brandGuideline) {
   try {
     const response = await axios.post(serviceUrl, payload);
     console.log('AI Service response status ->', response.status);
+    console.log('AI Service response data ->', response.data);
     return response.data;
   } catch (err) {
-    const unavailable = !err.response || err.response.status === 503;
     const serviceError = new Error(
-      unavailable
-        ? 'AI service unavailable. Please start the FastAPI AI service and try again.'
-        : `AI service returned HTTP ${err.response.status}`
+      err.response
+        ? `AI service returned HTTP ${err.response.status}`
+        : 'AI service unavailable. Please start the FastAPI AI service and try again.'
     );
-    serviceError.statusCode = unavailable ? 503 : 502;
+    serviceError.statusCode = 503;
     throw serviceError;
   }
 }

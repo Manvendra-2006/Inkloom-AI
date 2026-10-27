@@ -2,11 +2,26 @@
 const dotenv = require('dotenv');
 dotenv.config();
 
+const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+const frontendUrl = process.env.FRONTEND_URL
+  || (isProduction ? 'https://inkloom-ai-eosin.vercel.app' : 'http://localhost:3000');
+const additionalFrontendUrls = (process.env.ADDITIONAL_FRONTEND_URLS || '')
+  .split(',')
+  .map((url) => url.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+const localFrontendUrls = isProduction ? [] : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+
 module.exports = {
   PORT: process.env.PORT || 5000,
   MONGODB_URI: process.env.MONGODB_URI,
   JWT_SECRET: process.env.JWT_SECRET,
-  AI_SERVICE_URL: process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000',
+  AI_SERVICE_URL: process.env.AI_SERVICE_URL
+    || (isProduction ? 'https://inkloom-ai-2.onrender.com' : 'http://127.0.0.1:8000'),
+  CORS_ORIGINS: [...new Set([
+    ...frontendUrl.split(',').map((url) => url.trim().replace(/\/+$/, '')).filter(Boolean),
+    ...additionalFrontendUrls,
+    ...localFrontendUrls,
+  ])],
   AI_MODE: process.env.AI_MODE || 'prod',
   SOCIAL_MEDIA_MODE: process.env.SOCIAL_MEDIA_MODE || 'mock',
   // OAuth credentials (placeholders)

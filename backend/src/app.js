@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 const helmet = require('helmet');
-const { PORT } = require('./config');
+const config = require('./config');
 const authRoutes = require('./routes/auth');
 const adRoutes = require('./routes/advertisements');
 const adminRoutes = require('./routes/admin');
@@ -14,9 +14,13 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 app.use(helmet());
-app.use(cors());
+app.use(cors({ origin: config.CORS_ORIGINS }));
 app.use(express.json());
 app.use(morgan('dev'));
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy', service: 'Inkloom API' });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
