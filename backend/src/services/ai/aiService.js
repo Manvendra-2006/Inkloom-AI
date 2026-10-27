@@ -97,13 +97,37 @@ async function suggestImprovements(advertisement, brandGuideline, findings) {
     const response = await axios.post(getServiceUrl('improve'), payload, { timeout: 120000 });
     return response.data;
   } catch (err) {
+    const status = err.response?.status;
     console.error('AI improvement service error:', {
-      status: err.response?.status,
+      status,
       data: err.response?.data,
+      code: err.code,
+      error: err.message,
       payload,
     });
-    const serviceError = new Error('Unable to generate AI suggestions. Please try again.');
-    serviceError.statusCode = err.response ? 502 : 503;
+
+    let message = 'AI suggestions failed. Check the FastAPI and Ollama service logs.';
+    let statusCode = 502;
+    if (!err.response) {
+      message = err.code === 'ECONNABORTED'
+        ? 'AI suggestions timed out. Check the Ollama service and model response time.'
+        : 'Could not reach the FastAPI AI service.';
+      statusCode = 503;
+    } else if (status === 503) {
+      message = 'The suggestion model is unavailable. Verify OLLAMA_URL and that llama3:latest is running.';
+      statusCode = 503;
+    } else if (status === 409) {
+      message = err.response.data?.detail
+        || 'The audit findings no longer match this advertisement. Run AI Check again.';
+      statusCode = 409;
+    } else if (status === 422) {
+      message = 'FastAPI rejected the suggestion request. Check the FastAPI validation error in the Render logs.';
+    } else if (status === 502) {
+      message = 'The suggestion model returned an invalid response. Check the FastAPI logs and try again.';
+    }
+
+    const serviceError = new Error(message);
+    serviceError.statusCode = statusCode;
     throw serviceError;
   }
 }
