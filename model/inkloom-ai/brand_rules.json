@@ -1,0 +1,29 @@
+
+{
+  "brand_name": "Inkloom Demo Brand",
+  "version": "1.0.0",
+  "terms_requiring_review": [
+  {
+  "terms": ["guarantee", "guaranteed", "guarantees", "guaranteeing"],
+  "category": "claims",
+  "severity": "high",
+  "guideline_id": "CLAIM-001",
+  "reason": "Guarantee wording requires approved evidence."
+},
+    {
+      "term": "cheapest",
+      "category": "comparative_claim",
+      "severity": "high",
+      "guideline_id": "CLAIM-002",
+      "reason": "Superlative price claims require comparative evidence."
+    },
+    {
+      "term": "revolutionary",
+      "category": "tone",
+      "severity": "low",
+      "guideline_id": "TONE-001",
+      "reason": "Hype language may not match the preferred brand tone."
+    }
+  ],
+  "human_review_required": true
+}
