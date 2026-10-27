@@ -21,7 +21,7 @@ const advertisementSchema = new mongoose.Schema({
     required: function () { return this.isNew; },
   },
   status: { type: String, enum: statusEnum, default: 'DRAFT' },
-  aiStatus: { type: String, enum: ['flagged', 'clean'] },
+  aiStatus: { type: String, enum: ['flagged', 'clean', 'unavailable'] },
   aiComplianceScore: { type: Number },
   aiCheckedAt: { type: Date },
   aiReport: { type: mongoose.Schema.Types.ObjectId, ref: 'ComplianceReport' },

@@ -3,22 +3,72 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import MainLayout from '../layouts/MainLayout';
+import { Alert, Button, Card, Field, inputClass, PageHeader } from '../components/ui';
+
+/* ---------- Constants ---------- */
+
+const INITIAL_FORM = {
+  title: '',
+  caption: '',
+  imageUrl: '',
+  brandGuideline: '',
+};
+
+/* ---------- Components ---------- */
+
+// Shows the ad roughly as a reader would see it, updating as the form is filled in
+function AdPreview({ title, caption, imageUrl }) {
+  const [failedUrl, setFailedUrl] = useState('');
+  const showImage = imageUrl && failedUrl !== imageUrl;
+
+  return (
+    <Card title="Preview" description="Updates as you type." padded={false} className="lg:sticky lg:top-8">
+      <div className="aspect-video w-full bg-slate-100">
+        {showImage ? (
+          <img
+            src={imageUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            onError={() => setFailedUrl(imageUrl)}
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-slate-400">
+            {imageUrl ? 'This image could not be loaded.' : 'No image yet'}
+          </div>
+        )}
+      </div>
+      <div className="p-5">
+        <h3 className={`text-base font-semibold ${title ? 'text-slate-900' : 'text-slate-400'}`}>
+          {title || 'Advertisement title'}
+        </h3>
+        <p className={`mt-2 whitespace-pre-line text-sm ${caption ? 'text-slate-600' : 'text-slate-400'}`}>
+          {caption || 'Your caption will appear here.'}
+        </p>
+      </div>
+    </Card>
+  );
+}
+
+/* ---------- Page ---------- */
 
 export default function CreateAdPage() {
-  const [form, setForm] = useState({
-    title: '',
-    caption: '',
-    imageUrl: '',
-    brandGuideline: '',
-  });
-  const [profiles, setProfiles] = useState([]);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  const [form, setForm] = useState(INITIAL_FORM);
+  const [profiles, setProfiles] = useState([]);
+  const [loadingProfiles, setLoadingProfiles] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  const noProfiles = !loadingProfiles && profiles.length === 0;
+  const selectedProfile = profiles.find((profile) => profile._id === form.brandGuideline);
+
   useEffect(() => {
-    api.get('/brand-profiles')
+    api
+      .get('/brand-profiles')
       .then((res) => setProfiles(res.data))
-      .catch((err) => setError(err.response?.data?.message || 'Failed to load brand profiles'));
+      .catch((err) => setError(err.response?.data?.message || 'Failed to load brand profiles'))
+      .finally(() => setLoadingProfiles(false));
   }, []);
 
   const handleChange = (e) => {
@@ -28,80 +78,111 @@ export default function CreateAdPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+    setSubmitting(true);
     try {
       const res = await api.post('/ads', form);
       navigate(`/employee/ad/${res.data._id}`);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create advertisement');
+      setSubmitting(false);
     }
   };
 
   return (
     <MainLayout>
-      <h1 className="text-2xl font-bold mb-4">Create Advertisement</h1>
-      {error && <div className="bg-red-100 text-red-700 p-2 mb-4 rounded">{error}</div>}
-      {profiles.length === 0 && !error && (
-        <p className="bg-yellow-100 text-yellow-800 p-3 mb-4 rounded">
-          An administrator must save a brand profile before an advertisement can be checked.
-        </p>
-      )}
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
-        <div>
-          <label className="block font-medium mb-1">Brand Profile</label>
-          <select
-            name="brandGuideline"
-            value={form.brandGuideline}
-            onChange={handleChange}
-            required
-            disabled={profiles.length === 0}
-            className="w-full border rounded px-3 py-2"
-          >
-            <option value="">Select a brand profile...</option>
-            {profiles.map((profile) => (
-              <option key={profile._id} value={profile._id}>
-                {profile.name} — v{profile.version || '1.0'}
-              </option>
-            ))}
-          </select>
+      <PageHeader
+        title="Create advertisement"
+        description="Save a draft, then run the brand check on the next screen."
+      />
+
+      <div className="space-y-6">
+        {error && <Alert tone="error">{error}</Alert>}
+
+        {noProfiles && !error && (
+          <Alert tone="warning">
+            An administrator must save a brand profile before an advertisement can be checked.
+          </Alert>
+        )}
+
+        <div className="grid items-start gap-6 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            <Card title="Advertisement details">
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <Field
+                  id="brandGuideline"
+                  label="Brand profile"
+                  hint={selectedProfile ? `Tone of voice: ${selectedProfile.toneOfVoice}` : undefined}
+                >
+                  <select
+                    id="brandGuideline"
+                    name="brandGuideline"
+                    value={form.brandGuideline}
+                    onChange={handleChange}
+                    required
+                    disabled={loadingProfiles || noProfiles}
+                    className={inputClass}
+                  >
+                    <option value="">{loadingProfiles ? 'Loading profiles...' : 'Select a brand profile...'}</option>
+                    {profiles.map((profile) => (
+                      <option key={profile._id} value={profile._id}>
+                        {profile.name} — v{profile.version || '1.0'}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+
+                <Field id="title" label="Title">
+                  <input
+                    id="title"
+                    name="title"
+                    value={form.title}
+                    onChange={handleChange}
+                    required
+                    className={inputClass}
+                  />
+                </Field>
+
+                <Field id="caption" label="Caption / content">
+                  <textarea
+                    id="caption"
+                    name="caption"
+                    value={form.caption}
+                    onChange={handleChange}
+                    rows={5}
+                    className={inputClass}
+                  />
+                </Field>
+
+                <Field id="imageUrl" label="Image URL" hint="Link to a hosted image. Optional.">
+                  <input
+                    id="imageUrl"
+                    name="imageUrl"
+                    type="url"
+                    value={form.imageUrl}
+                    onChange={handleChange}
+                    placeholder="https://..."
+                    className={inputClass}
+                  />
+                </Field>
+
+                <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-5">
+                  <Button type="submit" disabled={noProfiles || loadingProfiles || submitting}>
+                    {submitting ? 'Saving...' : 'Save draft'}
+                  </Button>
+                  <Button variant="secondary" onClick={() => navigate('/employee/dashboard')}>
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-2">
+            <AdPreview title={form.title} caption={form.caption} imageUrl={form.imageUrl} />
+          </div>
         </div>
-        <div>
-          <label className="block font-medium mb-1">Title</label>
-          <input
-            name="title"
-            value={form.title}
-            onChange={handleChange}
-            required
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-        <div>
-          <label className="block font-medium mb-1">Caption / Content</label>
-          <textarea
-            name="caption"
-            value={form.caption}
-            onChange={handleChange}
-            rows={4}
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-        <div>
-          <label className="block font-medium mb-1">Image URL</label>
-          <input
-            name="imageUrl"
-            value={form.imageUrl}
-            onChange={handleChange}
-            placeholder="https://..."
-            className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={profiles.length === 0}
-          className="bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700"
-        >
-          Save Draft
-        </button>
-      </form>
+      </div>
     </MainLayout>
   );
 }

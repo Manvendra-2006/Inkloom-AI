@@ -105,6 +105,8 @@ router.put(
       if (!['DRAFT', 'CHANGES_REQUIRED'].includes(ad.status))
         return res.status(400).json({ message: 'Only drafts or change‑required ads can be edited' });
       const { title, caption, imageUrl, brandGuideline } = req.body;
+      let auditInputsChanged = false;
+
       if (brandGuideline !== undefined) {
         if (!mongoose.isValidObjectId(brandGuideline)) {
           return res.status(400).json({ message: 'A valid brand profile is required' });
@@ -115,11 +117,28 @@ router.put(
           isActive: { $ne: false },
         });
         if (!profile) return res.status(400).json({ message: 'Brand profile not found' });
+        auditInputsChanged = !ad.brandGuideline || ad.brandGuideline.toString() !== profile._id.toString();
         ad.brandGuideline = profile._id;
       }
-      if (title) ad.title = title;
-      if (caption !== undefined) ad.caption = caption;
-      if (imageUrl) ad.imageUrl = imageUrl;
+      if (title !== undefined && title !== ad.title) {
+        ad.title = title;
+        auditInputsChanged = true;
+      }
+      if (caption !== undefined && caption !== ad.caption) {
+        ad.caption = caption;
+        auditInputsChanged = true;
+      }
+      if (imageUrl !== undefined && imageUrl !== ad.imageUrl) {
+        ad.imageUrl = imageUrl;
+        auditInputsChanged = true;
+      }
+      if (auditInputsChanged) {
+        ad.aiStatus = undefined;
+        ad.aiComplianceScore = undefined;
+        ad.aiCheckedAt = undefined;
+        ad.aiReport = undefined;
+        ad.status = 'DRAFT';
+      }
       await ad.save();
       res.json(ad);
     } catch (err) {

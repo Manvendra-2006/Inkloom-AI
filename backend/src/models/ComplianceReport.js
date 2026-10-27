@@ -9,6 +9,7 @@ const complianceReportSchema = new mongoose.Schema({
   issues: { type: [mongoose.Schema.Types.Mixed], default: [] },
   rawResult: { type: mongoose.Schema.Types.Mixed, required: true },
   brandGuidelineSnapshot: { type: mongoose.Schema.Types.Mixed, required: true },
+  advertisementSnapshot: { type: mongoose.Schema.Types.Mixed, default: null },
   checkedAt: { type: Date, default: Date.now },
 });
 
