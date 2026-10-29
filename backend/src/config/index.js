@@ -15,8 +15,7 @@ module.exports = {
   PORT: process.env.PORT || 5000,
   MONGODB_URI: process.env.MONGODB_URI,
   JWT_SECRET: process.env.JWT_SECRET,
-  AI_SERVICE_URL: process.env.AI_SERVICE_URL
-    || (isProduction ? 'https://inkloom-ai-2.onrender.com' : 'http://127.0.0.1:8000'),
+  AI_SERVICE_URL: process.env.AI_SERVICE_URL || 'https://inkloom-ai-2.onrender.com',
   CORS_ORIGINS: [...new Set([
     ...frontendUrl.split(',').map((url) => url.trim().replace(/\/+$/, '')).filter(Boolean),
     ...additionalFrontendUrls,

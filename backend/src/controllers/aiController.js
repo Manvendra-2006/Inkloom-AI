@@ -247,7 +247,6 @@ async function getImprovementSuggestions(req, res, next) {
       || typeof result.revised_draft.title !== 'string'
       || !result.revised_draft.title.trim()
       || typeof result.revised_draft.caption !== 'string'
-      || !result.revised_draft.caption.trim()
     ) {
       const error = new Error('AI service returned an invalid suggestion response');
       error.statusCode = 502;
