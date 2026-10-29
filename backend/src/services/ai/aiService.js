@@ -3,66 +3,131 @@ const axios = require('axios');
 const config = require('../../config');
 
 function getServiceUrl(path) {
-  const serviceBaseUrl = (config.AI_SERVICE_URL || 'https://inkloom-ai-2.onrender.com')
+  const rawBase = (config.AI_SERVICE_URL || 'https://inkloom-ai-2.onrender.com').trim();
+  const serviceBaseUrl = rawBase
     .replace(/\/+$/, '')
     .replace(/\/(?:api\/check|audit|improve|suggest-improvements)$/, '');
   return `${serviceBaseUrl}/${path}`;
 }
 
 async function checkAd(advertisement, brandGuideline) {
-  const text = `${advertisement.title}\n${advertisement.caption || ''}`.trim() || advertisement.title;
+  const text = `${advertisement.title || ''}\n${advertisement.caption || ''}`.trim()
+    || String(advertisement.title || 'Advertisement text');
+
+  // Strictly conform to FastAPI BrandGuidelineRequest schema (no extra id/version/is_active)
   const payload = {
     text,
     brand_guideline: {
-      id: brandGuideline.id ? String(brandGuideline.id) : undefined,
-      version: brandGuideline.version ? String(brandGuideline.version) : '1.0',
-      is_active: brandGuideline.isActive !== false,
-      name: String(brandGuideline.name || 'Brand').trim() || 'Brand',
-      description: String(brandGuideline.description || 'Brand description').trim() || 'Brand description',
-      tone_of_voice: String(brandGuideline.toneOfVoice || 'Professional').trim() || 'Professional',
-      preferred_terminology: Array.isArray(brandGuideline.preferredTerminology)
-        ? brandGuideline.preferredTerminology.map(String).map((s) => s.trim()).filter(Boolean)
+      name: String(brandGuideline?.name || 'Brand').trim() || 'Brand',
+      description: String(brandGuideline?.description || 'Brand description').trim() || 'Brand description',
+      tone_of_voice: String(brandGuideline?.toneOfVoice || brandGuideline?.tone_of_voice || 'Professional').trim() || 'Professional',
+      preferred_terminology: Array.isArray(brandGuideline?.preferredTerminology || brandGuideline?.preferred_terminology)
+        ? (brandGuideline.preferredTerminology || brandGuideline.preferred_terminology).map(String).map((s) => s.trim()).filter(Boolean)
         : [],
-      terms_requiring_review: Array.isArray(brandGuideline.termsRequiringReview)
-        ? brandGuideline.termsRequiringReview.map(String).map((s) => s.trim()).filter(Boolean)
+      terms_requiring_review: Array.isArray(brandGuideline?.termsRequiringReview || brandGuideline?.terms_requiring_review)
+        ? (brandGuideline.termsRequiringReview || brandGuideline.terms_requiring_review).map(String).map((s) => s.trim()).filter(Boolean)
         : [],
-      guidelines: (Array.isArray(brandGuideline.guidelines) ? brandGuideline.guidelines : [])
+      guidelines: (Array.isArray(brandGuideline?.guidelines) ? brandGuideline.guidelines : [])
         .filter((g) => g && (g.title || g.rule))
         .map((guideline) => ({
-          guideline_id: guideline.id ? String(guideline.id) : undefined,
-          category: String(guideline.category || 'general').trim() || 'general',
+          guideline_id: guideline.guideline_id || guideline.id ? String(guideline.guideline_id || guideline.id) : undefined,
+          category: String(guideline.category || 'general').trim().toLowerCase(),
           title: String(guideline.title || guideline.rule || 'Guideline').trim(),
           description: String(guideline.description || ''),
           rule: String(guideline.rule || ''),
           examples: String(guideline.examples || ''),
-          severity: String(guideline.severity || 'medium').toLowerCase(),
+          severity: String(guideline.severity || 'medium').trim().toLowerCase(),
           active: guideline.active !== false,
         })),
     },
   };
-  if (advertisement.imageUrl) payload.image_url = advertisement.imageUrl;
+  if (advertisement?.imageUrl) {
+    payload.image_url = String(advertisement.imageUrl);
+  }
+
   const serviceUrl = getServiceUrl('audit');
 
-  console.log('AI Service request ->', serviceUrl);
+  // Diagnostic logging - safe, keys and metadata only (no secrets)
+  const payloadKeys = {
+    topLevelKeys: Object.keys(payload),
+    brandGuidelineKeys: payload.brand_guideline ? Object.keys(payload.brand_guideline) : null,
+    guidelinesCount: Array.isArray(payload.brand_guideline?.guidelines) ? payload.brand_guideline.guidelines.length : 0,
+    preferredTermsCount: Array.isArray(payload.brand_guideline?.preferred_terminology) ? payload.brand_guideline.preferred_terminology.length : 0,
+    reviewTermsCount: Array.isArray(payload.brand_guideline?.terms_requiring_review) ? payload.brand_guideline.terms_requiring_review.length : 0,
+    hasImageUrl: Boolean(payload.image_url),
+    textLength: payload.text.length,
+  };
 
+  console.log('[AI Check] Method: POST');
+  console.log(`[AI Check] URL: ${serviceUrl}`);
+  console.log(`[AI Check] Payload keys: ${JSON.stringify(payloadKeys)}`);
+
+  const requestConfig = {
+    timeout: 60000,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'User-Agent': 'Inkloom-Node-Backend/1.0',
+    },
+  };
+
+  let response;
   try {
-    const response = await axios.post(serviceUrl, payload, { timeout: 30000 });
-    console.log('AI Service response status ->', response.status);
+    try {
+      response = await axios.post(serviceUrl, payload, requestConfig);
+    } catch (initialErr) {
+      const isRetryable = initialErr.response?.status === 502
+        || initialErr.response?.status === 503
+        || initialErr.code === 'ECONNABORTED'
+        || initialErr.code === 'ETIMEDOUT';
+
+      if (isRetryable) {
+        console.warn(`[AI Check] Initial request returned ${initialErr.response?.status || initialErr.code}. Retrying in 2 seconds (FastAPI may be waking up)...`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        response = await axios.post(serviceUrl, payload, requestConfig);
+      } else {
+        throw initialErr;
+      }
+    }
+
+    const bodyPreview = typeof response.data === 'string'
+      ? response.data.slice(0, 500)
+      : JSON.stringify(response.data).slice(0, 500);
+
+    console.log(`[AI Check] FastAPI response status: ${response.status}`);
+    console.log(`[AI Check] FastAPI response body (first 500 chars): ${bodyPreview}`);
     return response.data;
   } catch (err) {
-    console.error('AI audit service error:', err.response?.data || err.message);
-    const serviceError = new Error(
-      err.response
+    const errorStatus = err.response ? err.response.status : null;
+    const errorBody = err.response?.data
+      ? (typeof err.response.data === 'string' ? err.response.data.slice(0, 500) : JSON.stringify(err.response.data).slice(0, 500))
+      : null;
+
+    console.error(`[AI Check Error] URL called: ${serviceUrl}`);
+    console.error('[AI Check Error] HTTP method: POST');
+    console.error(`[AI Check Error] Status: ${errorStatus || 'No response / Network error'}`);
+    console.error(`[AI Check Error] Error code: ${err.code || 'None'}`);
+    console.error(`[AI Check Error] Message: ${err.message}`);
+    if (errorBody) {
+      console.error(`[AI Check Error] Response body (first 500 chars): ${errorBody}`);
+    }
+
+    const message = errorStatus === 502
+      ? 'The AI service returned HTTP 502 (Bad Gateway). The model instance may be waking up or restarting on Render. Please retry in a few seconds.'
+      : err.response
         ? `AI service returned HTTP ${err.response.status}`
-        : 'AI service unavailable. Please check the AI service status and try again.'
-    );
-    serviceError.statusCode = err.response ? 502 : 503;
+        : 'AI service unavailable. Please check the AI service status and try again.';
+
+    const serviceError = new Error(message);
+    serviceError.statusCode = err.response ? err.response.status : 503;
     throw serviceError;
   }
 }
 
 async function suggestImprovements(advertisement, brandGuideline, findings) {
-  const text = `${advertisement.title}\n${advertisement.caption || ''}`.trim() || advertisement.title;
+  const text = `${advertisement.title || ''}\n${advertisement.caption || ''}`.trim()
+    || String(advertisement.title || 'Advertisement');
+
   const payload = {
     text,
     brand_id: null,
@@ -79,10 +144,45 @@ async function suggestImprovements(advertisement, brandGuideline, findings) {
 
   const serviceUrl = getServiceUrl('suggest-improvements');
 
-  try {
-    const response = await axios.post(serviceUrl, payload, { timeout: 30000 });
-    const data = response.data || {};
+  const payloadKeys = {
+    topLevelKeys: Object.keys(payload),
+    findingsCount: payload.audit_findings.length,
+    textLength: payload.text.length,
+  };
 
+  console.log('[AI Suggestions] Method: POST');
+  console.log(`[AI Suggestions] URL: ${serviceUrl}`);
+  console.log(`[AI Suggestions] Payload keys: ${JSON.stringify(payloadKeys)}`);
+
+  const requestConfig = {
+    timeout: 60000,
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'User-Agent': 'Inkloom-Node-Backend/1.0',
+    },
+  };
+
+  let response;
+  try {
+    try {
+      response = await axios.post(serviceUrl, payload, requestConfig);
+    } catch (initialErr) {
+      const isRetryable = initialErr.response?.status === 502
+        || initialErr.response?.status === 503
+        || initialErr.code === 'ECONNABORTED'
+        || initialErr.code === 'ETIMEDOUT';
+
+      if (isRetryable) {
+        console.warn(`[AI Suggestions] Initial request returned ${initialErr.response?.status || initialErr.code}. Retrying in 2 seconds...`);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        response = await axios.post(serviceUrl, payload, requestConfig);
+      } else {
+        throw initialErr;
+      }
+    }
+
+    const data = response.data || {};
     const rawSuggestions = Array.isArray(data.suggestions) ? data.suggestions : [];
     const normalizedSuggestions = [];
 
@@ -170,13 +270,19 @@ async function suggestImprovements(advertisement, brandGuideline, findings) {
       source: data.source || 'local_rules',
     };
   } catch (err) {
-    const status = err.response?.status;
-    console.error('AI improvement service error:', {
-      status,
-      data: err.response?.data,
-      code: err.code,
-      error: err.message,
-    });
+    const errorStatus = err.response ? err.response.status : null;
+    const errorBody = err.response?.data
+      ? (typeof err.response.data === 'string' ? err.response.data.slice(0, 500) : JSON.stringify(err.response.data).slice(0, 500))
+      : null;
+
+    console.error(`[AI Suggestions Error] URL called: ${serviceUrl}`);
+    console.error('[AI Suggestions Error] HTTP method: POST');
+    console.error(`[AI Suggestions Error] Status: ${errorStatus || 'No response / Network error'}`);
+    console.error(`[AI Suggestions Error] Error code: ${err.code || 'None'}`);
+    console.error(`[AI Suggestions Error] Message: ${err.message}`);
+    if (errorBody) {
+      console.error(`[AI Suggestions Error] Response body (first 500 chars): ${errorBody}`);
+    }
 
     let message = 'AI suggestions failed. Please check the FastAPI service logs.';
     let statusCode = 502;
@@ -185,19 +291,19 @@ async function suggestImprovements(advertisement, brandGuideline, findings) {
         ? 'AI suggestions timed out. Please check the AI service response time.'
         : 'Could not reach the FastAPI AI service.';
       statusCode = 503;
-    } else if (status === 503) {
+    } else if (errorStatus === 502) {
+      message = 'The AI service returned HTTP 502 (Bad Gateway). The model instance may be waking up or restarting on Render.';
+      statusCode = 502;
+    } else if (errorStatus === 503) {
       message = 'The suggestion model is unavailable on the FastAPI service.';
       statusCode = 503;
-    } else if (status === 409) {
+    } else if (errorStatus === 409) {
       message = err.response.data?.detail
         || 'The audit findings no longer match this advertisement. Run AI Check again.';
       statusCode = 409;
-    } else if (status === 422) {
+    } else if (errorStatus === 422) {
       message = 'FastAPI rejected the suggestion request due to validation error.';
       statusCode = 422;
-    } else if (status === 502) {
-      message = 'The suggestion model returned an invalid response.';
-      statusCode = 502;
     }
 
     const serviceError = new Error(message);
