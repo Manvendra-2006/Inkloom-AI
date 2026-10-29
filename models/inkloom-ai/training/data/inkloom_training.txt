@@ -1,0 +1,360 @@
+Label: FLAG
+Text: Risk-free growth with guaranteed profits.
+
+Label: REVIEW_CONTEXT
+Text: Our platform is faster than the previous version.
+
+Label: REVIEW_CONTEXT
+Text: Up to 30% faster reviews were reported in a small trial.
+
+Label: REVIEW_CONTEXT
+Text: Confirm the geographic availability of the advertised service.
+
+Label: REVIEW_CONTEXT
+Text: Our platform can help reduce repetitive work for some teams.
+
+Label: FLAG
+Text: Earn $10,000 every month with no experience.
+
+Label: REVIEW_CONTEXT
+Text: A recent benchmark showed shorter processing times.
+
+Label: REVIEW_CONTEXT
+Text: Customers may see improved productivity after onboarding.
+
+Label: REVIEW_CONTEXT
+Text: Survey participants said the process felt more efficient.
+
+Label: REVIEW_CONTEXT
+Text: The product is described as suitable for all businesses; clarify the scope.
+
+Label: NO_FLAG
+Text: Keep project updates in one place.
+
+Label: NO_FLAG
+Text: See how the workspace fits your team's process.
+
+Label: REVIEW_CONTEXT
+Text: Our tool increased engagement in a limited pilot study.
+
+Label: FLAG
+Text: We guarantee you will never have another failure.
+
+Label: FLAG
+Text: You cannot fail when you use our product.
+
+Label: NO_FLAG
+Text: Learn how to create a clearer content workflow.
+
+Label: REVIEW_CONTEXT
+Text: Independent testing found improved campaign turnaround time.
+
+Label: REVIEW_CONTEXT
+Text: Our tool improved completion rates in a controlled test.
+
+Label: NO_FLAG
+Text: Create and update campaign briefs collaboratively.
+
+Label: NO_FLAG
+Text: A simple way to keep marketing materials organized.
+
+Label: FLAG
+Text: This is the best product available anywhere.
+
+Label: NO_FLAG
+Text: Our workspace helps teams plan and review campaigns.
+
+Label: REVIEW_CONTEXT
+Text: A comparison showed better results under specific conditions.
+
+Label: REVIEW_CONTEXT
+Text: Check whether the quoted testimonial has permission for advertising use.
+
+Label: FLAG
+Text: Double your sales in just seven days, guaranteed.
+
+Label: FLAG
+Text: Guaranteed to eliminate every security threat from your business.
+
+Label: NO_FLAG
+Text: Find a more organized way to manage projects.
+
+Label: NO_FLAG
+Text: Plan upcoming posts with a shared content calendar.
+
+Label: FLAG
+Text: The safest product on the market, with zero risk.
+
+Label: REVIEW_CONTEXT
+Text: Our customers reported a 25% improvement in workflow speed.
+
+Label: FLAG
+Text: Every customer will achieve perfect results.
+
+Label: NO_FLAG
+Text: Find your team's notes and drafts in one workspace.
+
+Label: NO_FLAG
+Text: Create a checklist for your next marketing project.
+
+Label: NO_FLAG
+Text: Track the status of your team's content drafts.
+
+Label: NO_FLAG
+Text: Try our workspace to manage campaign notes.
+
+Label: FLAG
+Text: Risk-free returns are assured on every investment.
+
+Label: NO_FLAG
+Text: Create, review, and organize content in one place.
+
+Label: FLAG
+Text: The cheapest service available anywhere, guaranteed.
+
+Label: NO_FLAG
+Text: Explore practical ways to organize your team's content.
+
+Label: FLAG
+Text: Double your sales overnight, guaranteed.
+
+Label: NO_FLAG
+Text: Organize your marketing workflow around your team's needs.
+
+Label: NO_FLAG
+Text: Share campaign plans with your colleagues.
+
+Label: NO_FLAG
+Text: Create a checklist for your next campaign.
+
+Label: FLAG
+Text: 100% success is guaranteed for all users.
+
+Label: NO_FLAG
+Text: Discover tools for managing everyday marketing tasks.
+
+Label: NO_FLAG
+Text: Help your team keep content projects on track.
+
+Label: FLAG
+Text: Our supplement cures diabetes permanently.
+
+Label: NO_FLAG
+Text: Keep your team's campaign tasks organized in one workspace.
+
+Label: REVIEW_CONTEXT
+Text: A pilot program reported lower average task completion time.
+
+Label: REVIEW_CONTEXT
+Text: The savings claim may depend on usage and subscription tier.
+
+Label: FLAG
+Text: Lose 15 kg in one week without changing your diet.
+
+Label: FLAG
+Text: Everyone will achieve 100% success with our service.
+
+Label: NO_FLAG
+Text: Group content tasks by project or deadline.
+
+Label: REVIEW_CONTEXT
+Text: Results vary depending on team size and implementation.
+
+Label: FLAG
+Text: Our product always beats every alternative.
+
+Label: NO_FLAG
+Text: Organize creative assets for easier access.
+
+Label: REVIEW_CONTEXT
+Text: The guarantee may have exclusions that should be stated clearly.
+
+Label: NO_FLAG
+Text: Plan posts and review drafts with your team.
+
+Label: FLAG
+Text: Get guaranteed results with zero risk.
+
+Label: REVIEW_CONTEXT
+Text: The campaign says users see results within seven days; evidence is needed.
+
+Label: NO_FLAG
+Text: Keep campaign information together for easier access.
+
+Label: NO_FLAG
+Text: Make your content workflow easier to follow.
+
+Label: FLAG
+Text: Our software prevents every possible security breach.
+
+Label: NO_FLAG
+Text: Review marketing drafts before sharing them.
+
+Label: FLAG
+Text: All users will see results within 24 hours.
+
+Label: FLAG
+Text: Every team will save exactly ten hours each week.
+
+Label: NO_FLAG
+Text: Explore features designed to support team collaboration.
+
+Label: FLAG
+Text: The world's cheapest and most effective platform.
+
+Label: NO_FLAG
+Text: Use a shared workspace for content planning.
+
+Label: FLAG
+Text: Number one in the industry, guaranteed.
+
+Label: FLAG
+Text: Save 90% on every purchase, no exceptions.
+
+Label: NO_FLAG
+Text: Explore tools for organizing everyday content work.
+
+Label: NO_FLAG
+Text: Coordinate campaign tasks with a shared calendar.
+
+Label: FLAG
+Text: Guaranteed to outperform every competitor.
+
+Label: NO_FLAG
+Text: Use the workspace to plan upcoming campaigns.
+
+Label: REVIEW_CONTEXT
+Text: Results vary by customer, industry, and implementation.
+
+Label: REVIEW_CONTEXT
+Text: The ad mentions a limited-time offer without stating the end date.
+
+Label: REVIEW_CONTEXT
+Text: The headline implies a typical outcome, but the evidence is unclear.
+
+Label: REVIEW_CONTEXT
+Text: Our product may improve results depending on the customer's workflow.
+
+Label: FLAG
+Text: Make your business profitable overnight.
+
+Label: REVIEW_CONTEXT
+Text: A study found that some teams completed tasks more quickly.
+
+Label: NO_FLAG
+Text: Manage campaign notes from a shared workspace.
+
+Label: REVIEW_CONTEXT
+Text: Does the claim apply to every plan or only selected subscriptions?
+
+Label: FLAG
+Text: Guaranteed to cut costs by 90% for all users.Guaranteed to double your income in seven days.
+
+Label: FLAG
+Text: Our product guarantees twice as many sales in 30 days.
+
+Label: REVIEW_CONTEXT
+Text: The price comparison needs matching product specifications and dates.
+
+Label: REVIEW_CONTEXT
+Text: The advertised discount may exclude certain products.
+
+Label: NO_FLAG
+Text: Maintain a list of upcoming campaign activities.
+
+Label: REVIEW_CONTEXT
+Text: The campaign references clinical results that need appropriate substantiation.
+
+Label: NO_FLAG
+Text: Prepare content for review before publication.
+
+Label: REVIEW_CONTEXT
+Text: The claim references a customer study but provides no source.
+
+Label: REVIEW_CONTEXT
+Text: The new workflow was rated easier by surveyed users.
+
+Label: REVIEW_CONTEXT
+Text: Users achieved better results in a recent customer survey.
+
+Label: REVIEW_CONTEXT
+Text: A customer case study reported higher conversion rates.
+
+Label: FLAG
+Text: This investment cannot lose money.
+
+Label: NO_FLAG
+Text: Review drafts before sending them to your team.
+
+Label: REVIEW_CONTEXT
+Text: Can we substantiate the claim that customers save 40% of their time?
+
+Label: NO_FLAG
+Text: Keep track of content drafts and review status.
+
+Label: NO_FLAG
+Text: Organize campaign drafts in one shared workspace.
+
+Label: FLAG
+Text: The number one solution worldwide, guaranteed.
+
+Label: FLAG
+Text: Get instant approval with no conditions whatsoever.
+
+Label: REVIEW_CONTEXT
+Text: The comparison with competitors needs a clear methodology.
+
+Label: REVIEW_CONTEXT
+Text: Check whether the performance statistic reflects a representative sample.
+
+Label: FLAG
+Text: Our tool is the cheapest solution on the market.
+
+Label: NO_FLAG
+Text: Explore a simpler way to coordinate marketing projects.
+
+Label: NO_FLAG
+Text: Use a shared space to coordinate marketing work.
+
+Label: FLAG
+Text: The only solution that always delivers perfect results.
+
+Label: NO_FLAG
+Text: Bring your team's campaign tasks into one workspace.
+
+Label: REVIEW_CONTEXT
+Text: Verify the conditions attached to the advertised free trial.
+
+Label: REVIEW_CONTEXT
+Text: Reduce costs by up to 20%, subject to usage and conditions.
+
+Label: FLAG
+Text: Get unlimited results with absolutely no risk.
+
+Label: REVIEW_CONTEXT
+Text: The ad says setup takes minutes; confirm the conditions for that estimate.
+
+Label: FLAG
+Text: We guarantee instant success for every customer.
+
+Label: FLAG
+Text: Our treatment works for every patient.
+
+Label: FLAG
+Text: This product eliminates all health problems.
+
+Label: FLAG
+Text: Become fluent in any language in three days.
+
+Label: REVIEW_CONTEXT
+Text: The campaign performed better during one test period.
+
+Label: FLAG
+Text: We promise every customer will double their revenue.
+
+Label: FLAG
+Text: Our service guarantees a 50% increase in conversions.
+
+Label: REVIEW_CONTEXT
+Text: Save up to five hours per week with our platform.
+

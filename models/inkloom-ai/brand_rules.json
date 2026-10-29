@@ -1,0 +1,75 @@
+{
+  "brand_name": "Inkloom Demo Brand",
+  "version": "1.0.2",
+  "human_review_required": true,
+  "guideline_catalog": [
+    {
+      "guideline_id": "CLAIM-001",
+      "title": "Guarantee claims",
+      "description": "Guarantee wording requires approved evidence."
+    },
+    {
+      "guideline_id": "CLAIM-002",
+      "title": "Comparative claims",
+      "description": "Superlative price claims require comparative evidence."
+    },
+    {
+      "guideline_id": "TONE-001",
+      "title": "Brand tone",
+      "description": "Hype language may not match the preferred brand tone."
+    },
+    {
+      "guideline_id": "CLAIM-003",
+      "title": "Absolute risk claims",
+      "description": "Absolute risk claims require review."
+    }
+  ],
+  "terms_requiring_review": [
+    {
+      "terms": [
+        "guarantee",
+        "guaranteed",
+        "guarantees"
+      ],
+      "term": null,
+      "category": "claims",
+      "severity": "high",
+      "guideline_id": "CLAIM-001",
+      "reason": "Guarantee wording requires approved evidence.",
+      "source": "rule"
+    },
+    {
+      "terms": [
+        "cheapest"
+      ],
+      "term": null,
+      "category": "comparative_claim",
+      "severity": "high",
+      "guideline_id": "CLAIM-002",
+      "reason": "Superlative price claims require comparative evidence.",
+      "source": "rule"
+    },
+    {
+      "terms": [
+        "revolutionary"
+      ],
+      "term": null,
+      "category": "tone",
+      "severity": "low",
+      "guideline_id": "TONE-001",
+      "reason": "Hype language may not match the preferred brand tone.",
+      "source": "rule"
+    },
+    {
+      "terms": [
+        "risk-free"
+      ],
+      "term": null,
+      "category": "claims",
+      "severity": "medium",
+      "guideline_id": "CLAIM-003",
+      "reason": "Absolute risk claims require review.",
+      "source": "rule"
+    }
+  ]
+}
