@@ -1,8 +1,17 @@
 // frontend/src/services/api.js
 import axios from 'axios';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || (
+  process.env.NODE_ENV === 'production'
+    ? 'https://inkloom-ai-ot51.onrender.com/api'
+    : 'http://localhost:5000/api'
+);
+const normalizedApiBaseUrl = API_BASE_URL.replace(/\/+$/, '');
+
 const instance = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL: normalizedApiBaseUrl.endsWith('/api')
+    ? normalizedApiBaseUrl
+    : `${normalizedApiBaseUrl}/api`,
 });
 
 // Helper to set auth header after login/register
