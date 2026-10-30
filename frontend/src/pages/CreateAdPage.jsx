@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import MainLayout from '../layouts/MainLayout';
-import { Alert, Button, Card, Field, inputClass, PageHeader } from '../components/ui';
+import { Alert, Button, cx, Field, inputClass, PageHeader } from '../components/ui';
 
 /* ---------- Constants ---------- */
 
@@ -14,7 +14,98 @@ const INITIAL_FORM = {
   brandGuideline: '',
 };
 
+// The path every ad takes after it is saved
+const WORKFLOW_STEPS = [
+  { title: 'Draft', text: 'Write the ad and pick a brand profile.' },
+  { title: 'AI check', text: 'Checked against the brand guidelines.' },
+  { title: 'Human review', text: 'An admin approves or asks for changes.' },
+  { title: 'Publish', text: 'Approved ads go to connected accounts.' },
+];
+
+const CHIP_TONES = {
+  success: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  warning: 'bg-amber-50 text-amber-800 ring-amber-200',
+};
+
+const toList = (value) => (Array.isArray(value) ? value : []);
+
 /* ---------- Components ---------- */
+
+// Card with a small label above the title, like the dashboard panels
+function Panel({ eyebrow, title, description, padded = true, className, children }) {
+  return (
+    <section className={cx('overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm', className)}>
+      <div className="px-5 pt-5">
+        {eyebrow && (
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{eyebrow}</p>
+        )}
+        <h2 className="mt-1 text-lg font-semibold text-slate-900">{title}</h2>
+        {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+      </div>
+      <div className={padded ? 'p-5' : 'pt-5'}>{children}</div>
+    </section>
+  );
+}
+
+function WorkflowSteps() {
+  return (
+    <ol className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="What happens after you save">
+      {WORKFLOW_STEPS.map(({ title, text }, index) => (
+        <li
+          key={title}
+          className={cx(
+            'flex items-start gap-3 rounded-xl border p-4',
+            index === 0 ? 'border-indigo-200 bg-indigo-50/60' : 'border-slate-200 bg-white'
+          )}
+        >
+          <span
+            className={cx(
+              'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
+              index === 0 ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'
+            )}
+          >
+            {index + 1}
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-slate-900">{title}</p>
+            <p className="mt-0.5 text-xs text-slate-500">{text}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+function ChipRow({ label, terms, tone }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-xs font-medium text-slate-500">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {terms.map((term) => (
+          <span key={term} className={cx('rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset', CHIP_TONES[tone])}>
+            {term}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Tells the writer what the chosen brand expects before they write the copy
+function BrandGuidance({ profile }) {
+  const preferred = toList(profile.preferredTerminology);
+  const flagged = toList(profile.termsRequiringReview);
+
+  return (
+    <div className="mt-3 space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <p className="text-sm text-slate-700">
+        <span className="font-medium text-slate-900">Tone of voice:</span> {profile.toneOfVoice || '—'}
+      </p>
+      {preferred.length > 0 && <ChipRow label="Preferred wording" terms={preferred} tone="success" />}
+      {flagged.length > 0 && <ChipRow label="Wording that triggers review" terms={flagged} tone="warning" />}
+    </div>
+  );
+}
 
 // Shows the ad roughly as a reader would see it, updating as the form is filled in
 function AdPreview({ title, caption, imageUrl }) {
@@ -22,7 +113,13 @@ function AdPreview({ title, caption, imageUrl }) {
   const showImage = imageUrl && failedUrl !== imageUrl;
 
   return (
-    <Card title="Preview" description="Updates as you type." padded={false} className="lg:sticky lg:top-8">
+    <Panel
+      eyebrow="Live preview"
+      title="Preview"
+      description="Updates as you type."
+      padded={false}
+      className="lg:sticky lg:top-8"
+    >
       <div className="aspect-video w-full bg-slate-100">
         {showImage ? (
           <img
@@ -38,14 +135,14 @@ function AdPreview({ title, caption, imageUrl }) {
         )}
       </div>
       <div className="p-5">
-        <h3 className={`text-base font-semibold ${title ? 'text-slate-900' : 'text-slate-400'}`}>
+        <h3 className={cx('text-base font-semibold', title ? 'text-slate-900' : 'text-slate-400')}>
           {title || 'Advertisement title'}
         </h3>
-        <p className={`mt-2 whitespace-pre-line text-sm ${caption ? 'text-slate-600' : 'text-slate-400'}`}>
+        <p className={cx('mt-2 whitespace-pre-line text-sm', caption ? 'text-slate-600' : 'text-slate-400')}>
           {caption || 'Your caption will appear here.'}
         </p>
       </div>
-    </Card>
+    </Panel>
   );
 }
 
@@ -105,78 +202,80 @@ export default function CreateAdPage() {
           </Alert>
         )}
 
+        <WorkflowSteps />
+
         <div className="grid items-start gap-6 lg:grid-cols-5">
-          <div className="lg:col-span-3">
-            <Card title="Advertisement details">
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <Field
+          <Panel
+            eyebrow="Ad editor"
+            title="Advertisement details"
+            description="Pick the brand first so you can see its wording rules."
+            className="lg:col-span-3"
+          >
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <Field id="brandGuideline" label="Brand profile">
+                <select
                   id="brandGuideline"
-                  label="Brand profile"
-                  hint={selectedProfile ? `Tone of voice: ${selectedProfile.toneOfVoice}` : undefined}
+                  name="brandGuideline"
+                  value={form.brandGuideline}
+                  onChange={handleChange}
+                  required
+                  disabled={loadingProfiles || noProfiles}
+                  className={inputClass}
                 >
-                  <select
-                    id="brandGuideline"
-                    name="brandGuideline"
-                    value={form.brandGuideline}
-                    onChange={handleChange}
-                    required
-                    disabled={loadingProfiles || noProfiles}
-                    className={inputClass}
-                  >
-                    <option value="">{loadingProfiles ? 'Loading profiles...' : 'Select a brand profile...'}</option>
-                    {profiles.map((profile) => (
-                      <option key={profile._id} value={profile._id}>
-                        {profile.name} — v{profile.version || '1.0'}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
+                  <option value="">{loadingProfiles ? 'Loading profiles...' : 'Select a brand profile...'}</option>
+                  {profiles.map((profile) => (
+                    <option key={profile._id} value={profile._id}>
+                      {profile.name} — v{profile.version || '1.0'}
+                    </option>
+                  ))}
+                </select>
+                {selectedProfile && <BrandGuidance profile={selectedProfile} />}
+              </Field>
 
-                <Field id="title" label="Title">
-                  <input
-                    id="title"
-                    name="title"
-                    value={form.title}
-                    onChange={handleChange}
-                    required
-                    className={inputClass}
-                  />
-                </Field>
+              <Field id="title" label="Title">
+                <input
+                  id="title"
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  required
+                  className={inputClass}
+                />
+              </Field>
 
-                <Field id="caption" label="Caption / content">
-                  <textarea
-                    id="caption"
-                    name="caption"
-                    value={form.caption}
-                    onChange={handleChange}
-                    rows={5}
-                    className={inputClass}
-                  />
-                </Field>
+              <Field id="caption" label="Caption / content">
+                <textarea
+                  id="caption"
+                  name="caption"
+                  value={form.caption}
+                  onChange={handleChange}
+                  rows={5}
+                  className={inputClass}
+                />
+              </Field>
 
-                <Field id="imageUrl" label="Image URL" hint="Link to a hosted image. Optional.">
-                  <input
-                    id="imageUrl"
-                    name="imageUrl"
-                    type="url"
-                    value={form.imageUrl}
-                    onChange={handleChange}
-                    placeholder="https://..."
-                    className={inputClass}
-                  />
-                </Field>
+              <Field id="imageUrl" label="Image URL" hint="Link to a hosted image. Optional.">
+                <input
+                  id="imageUrl"
+                  name="imageUrl"
+                  type="url"
+                  value={form.imageUrl}
+                  onChange={handleChange}
+                  placeholder="https://..."
+                  className={inputClass}
+                />
+              </Field>
 
-                <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-5">
-                  <Button type="submit" disabled={noProfiles || loadingProfiles || submitting}>
-                    {submitting ? 'Saving...' : 'Save draft'}
-                  </Button>
-                  <Button variant="secondary" onClick={() => navigate('/employee/dashboard')}>
-                    Cancel
-                  </Button>
-                </div>
-              </form>
-            </Card>
-          </div>
+              <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-5">
+                <Button type="submit" disabled={noProfiles || loadingProfiles || submitting}>
+                  {submitting ? 'Saving...' : 'Save draft'}
+                </Button>
+                <Button variant="secondary" onClick={() => navigate('/employee/dashboard')}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </Panel>
 
           <div className="lg:col-span-2">
             <AdPreview title={form.title} caption={form.caption} imageUrl={form.imageUrl} />

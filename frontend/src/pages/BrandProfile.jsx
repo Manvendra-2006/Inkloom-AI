@@ -1,17 +1,17 @@
 // frontend/src/pages/BrandProfile.js
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import api from '../services/api';
 import MainLayout from '../layouts/MainLayout';
 import {
   Alert,
   Badge,
   Button,
-  Card,
   cx,
   EmptyState,
   Field,
   inputClass,
   PageHeader,
+  Skeleton,
 } from '../components/ui';
 
 /* ---------- Constants ---------- */
@@ -37,7 +37,6 @@ const GUIDELINE_CATEGORIES = [
 ];
 
 const SEVERITIES = ['LOW', 'MEDIUM', 'HIGH'];
-const SEVERITY_TONES = { LOW: 'neutral', MEDIUM: 'warning', HIGH: 'danger' };
 
 const EMPTY_GUIDELINE = {
   category: 'CLAIMS',
@@ -62,11 +61,28 @@ const EMPTY_FORM = {
 const TERMINOLOGY_HELP = 'Words or phrases your brand prefers to use. Separate terms with commas.';
 const REVIEW_TERMS_HELP = 'Words or phrases that should trigger AI review. Separate terms with commas.';
 
+// What each part of a profile does during an AI check
+const HOW_IT_WORKS = [
+  { dot: 'bg-indigo-500', title: 'Tone of voice', text: 'Included in every AI check.' },
+  { dot: 'bg-emerald-500', title: 'Preferred terminology', text: 'Wording the AI encourages.' },
+  { dot: 'bg-amber-500', title: 'Terms requiring review', text: 'Wording that triggers AI review.' },
+  { dot: 'bg-violet-500', title: 'Official guidelines', text: 'Active rules are added to each check.' },
+];
+
+const ICON_PATHS = {
+  profiles: 'M4 6h16M4 12h16M4 18h10',
+  shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z',
+  rules: 'M5 13l4 4L19 7',
+  flag: 'M5 21V4m0 0h11l-2 4 2 4H5',
+};
+
 /* ---------- Helpers ---------- */
 
 const formatEnum = (value) => value.charAt(0) + value.slice(1).toLowerCase().replace(/_/g, ' ');
 
 const toCommaSeparated = (terms) => (Array.isArray(terms) ? terms.join(', ') : '');
+
+const countOf = (list) => (Array.isArray(list) ? list.length : 0);
 
 // Splits "a, b, A" into ["a", "b"] (trimmed, case-insensitive unique)
 function parseTerms(value) {
@@ -112,6 +128,54 @@ function profileToForm(profile) {
 
 /* ---------- Small components ---------- */
 
+function Icon({ name, className = 'h-5 w-5' }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={ICON_PATHS[name]} />
+    </svg>
+  );
+}
+
+// Card with a small label above the title, like the dashboard panels
+function Panel({ eyebrow, title, description, actions, className, children }) {
+  return (
+    <section className={cx('rounded-xl border border-slate-200 bg-white shadow-sm', className)}>
+      <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-5">
+        <div>
+          {eyebrow && (
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{eyebrow}</p>
+          )}
+          <h2 className="mt-1 text-lg font-semibold text-slate-900">{title}</h2>
+          {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+        </div>
+        {actions}
+      </div>
+      <div className="p-5">{children}</div>
+    </section>
+  );
+}
+
+function SummaryTile({ icon, iconClass, label, value, caption, loading }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-3">
+        <span className={cx('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', iconClass)}>
+          <Icon name={icon} />
+        </span>
+        <p className="text-sm font-medium text-slate-600">{label}</p>
+      </div>
+      <div className="mt-3">
+        {loading ? (
+          <Skeleton className="h-9 w-12" />
+        ) : (
+          <p className="text-3xl font-semibold tabular-nums tracking-tight text-slate-900">{value}</p>
+        )}
+      </div>
+      <p className="mt-1 text-xs text-slate-500">{caption}</p>
+    </div>
+  );
+}
+
 function FormSection({ title, description, actions, children }) {
   return (
     <section>
@@ -127,24 +191,6 @@ function FormSection({ title, description, actions, children }) {
   );
 }
 
-const CHIP_TONES = {
-  success: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-  warning: 'bg-amber-50 text-amber-800 ring-amber-200',
-};
-
-function TermChips({ terms, tone }) {
-  if (!Array.isArray(terms) || terms.length === 0) return <span className="text-slate-400">—</span>;
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {terms.map((term) => (
-        <span key={term} className={cx('rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset', CHIP_TONES[tone])}>
-          {term}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function GuidelineEditor({ guideline, index, onChange, onRemove }) {
   const id = (field) => `guideline-${field}-${index}`;
   const update = (field) => (event) => onChange(index, field, event.target.value);
@@ -155,8 +201,8 @@ function GuidelineEditor({ guideline, index, onChange, onRemove }) {
         {guideline.title || `Guideline ${index + 1}`}
       </legend>
 
-      <div className="grid gap-4 md:grid-cols-12">
-        <div className="md:col-span-4">
+      <div className="grid gap-4 xl:grid-cols-12">
+        <div className="xl:col-span-4">
           <Field id={id('category')} label="Category">
             <select id={id('category')} className={inputClass} value={guideline.category} onChange={update('category')} required>
               {GUIDELINE_CATEGORIES.map((category) => (
@@ -166,13 +212,13 @@ function GuidelineEditor({ guideline, index, onChange, onRemove }) {
           </Field>
         </div>
 
-        <div className="md:col-span-5">
+        <div className="xl:col-span-5">
           <Field id={id('title')} label="Title">
             <input id={id('title')} className={inputClass} value={guideline.title} onChange={update('title')} required maxLength={160} />
           </Field>
         </div>
 
-        <div className="md:col-span-3">
+        <div className="xl:col-span-3">
           <Field id={id('severity')} label="Severity">
             <select id={id('severity')} className={inputClass} value={guideline.severity} onChange={update('severity')}>
               {SEVERITIES.map((severity) => (
@@ -182,25 +228,25 @@ function GuidelineEditor({ guideline, index, onChange, onRemove }) {
           </Field>
         </div>
 
-        <div className="md:col-span-12">
+        <div className="xl:col-span-12">
           <Field id={id('description')} label="Description">
             <textarea id={id('description')} rows={2} className={inputClass} value={guideline.description} onChange={update('description')} />
           </Field>
         </div>
 
-        <div className="md:col-span-12">
+        <div className="xl:col-span-12">
           <Field id={id('rule')} label="Rule">
             <textarea id={id('rule')} rows={2} className={inputClass} value={guideline.rule} onChange={update('rule')} />
           </Field>
         </div>
 
-        <div className="md:col-span-8">
+        <div className="xl:col-span-8">
           <Field id={id('examples')} label="Examples">
             <textarea id={id('examples')} rows={2} className={inputClass} value={guideline.examples} onChange={update('examples')} />
           </Field>
         </div>
 
-        <div className="flex flex-col justify-center gap-3 md:col-span-4">
+        <div className="flex flex-col justify-center gap-3 xl:col-span-4">
           <label className="inline-flex items-center gap-2 text-sm text-slate-700">
             <input
               type="checkbox"
@@ -223,63 +269,42 @@ function GuidelineEditor({ guideline, index, onChange, onRemove }) {
   );
 }
 
-function ProfileCard({ profile, selected, onEdit, onToggleActive }) {
+// One saved profile in the side list. Clicking the row opens it in the editor.
+function ProfileListItem({ profile, selected, onEdit, onToggleActive }) {
   const isInactive = profile.isActive === false;
-  const guidelines = profile.guidelines || [];
+  const activeGuidelines = (profile.guidelines || []).filter((g) => g.active !== false).length;
 
   return (
-    <Card className={cx('h-full', selected && 'ring-2 ring-indigo-500')}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold text-slate-900">{profile.name}</h3>
-          <p className="mt-1 line-clamp-2 text-sm text-slate-500">{profile.description}</p>
+    <li
+      className={cx(
+        'rounded-lg border p-3 transition',
+        selected ? 'border-indigo-500 bg-indigo-50/40' : 'border-slate-200 hover:border-slate-300'
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => onEdit(profile)}
+        aria-current={selected ? 'true' : undefined}
+        className="block w-full rounded text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+      >
+        <div className="flex items-start justify-between gap-2">
+          <p className="min-w-0 truncate text-sm font-semibold text-slate-900">{profile.name}</p>
+          <Badge tone={isInactive ? 'neutral' : 'success'}>{isInactive ? 'Inactive' : 'Active'}</Badge>
         </div>
-        <Badge tone={isInactive ? 'neutral' : 'success'}>{isInactive ? 'Inactive' : 'Active'}</Badge>
+        <p className="mt-1 truncate text-xs text-slate-500">
+          {profile.toneOfVoice} · v{profile.version || '1.0'}
+        </p>
+        <p className="mt-2 text-xs text-slate-400">
+          {activeGuidelines} {activeGuidelines === 1 ? 'guideline' : 'guidelines'} ·{' '}
+          {countOf(profile.preferredTerminology)} preferred · {countOf(profile.termsRequiringReview)} for review
+        </p>
+      </button>
+      <div className="mt-3 flex justify-end">
+        <Button size="sm" variant={isInactive ? 'primary' : 'secondary'} onClick={() => onToggleActive(profile)}>
+          {isInactive ? 'Activate' : 'Deactivate'}
+        </Button>
       </div>
-
-      <dl className="mt-5 space-y-4 text-sm">
-        <div>
-          <dt className="mb-1.5 text-xs font-medium text-slate-500">Tone of voice</dt>
-          <dd className="text-slate-800">{profile.toneOfVoice}</dd>
-        </div>
-        <div>
-          <dt className="mb-1.5 text-xs font-medium text-slate-500">Preferred terminology</dt>
-          <dd><TermChips terms={profile.preferredTerminology} tone="success" /></dd>
-        </div>
-        <div>
-          <dt className="mb-1.5 text-xs font-medium text-slate-500">Terms requiring review</dt>
-          <dd><TermChips terms={profile.termsRequiringReview} tone="warning" /></dd>
-        </div>
-        <div>
-          <dt className="mb-1.5 text-xs font-medium text-slate-500">Official guidelines</dt>
-          <dd>
-            {guidelines.length === 0 ? (
-              <span className="text-slate-400">—</span>
-            ) : (
-              <ul className="space-y-1.5">
-                {guidelines.map((g) => (
-                  <li key={g._id || g.title} className="flex flex-wrap items-center gap-2">
-                    <span className={cx('font-medium', g.active ? 'text-slate-800' : 'text-slate-400 line-through')}>{g.title}</span>
-                    <Badge tone="neutral">{formatEnum(g.category)}</Badge>
-                    {g.severity && <Badge tone={SEVERITY_TONES[g.severity] || 'neutral'}>{formatEnum(g.severity)}</Badge>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </dd>
-        </div>
-      </dl>
-
-      <div className="mt-6 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
-        <span className="text-xs text-slate-500">Version {profile.version || '1.0'}</span>
-        <div className="flex gap-2">
-          <Button size="sm" variant="secondary" onClick={() => onEdit(profile)}>Edit</Button>
-          <Button size="sm" variant={isInactive ? 'primary' : 'danger'} onClick={() => onToggleActive(profile)}>
-            {isInactive ? 'Activate' : 'Deactivate'}
-          </Button>
-        </div>
-      </div>
-    </Card>
+    </li>
   );
 }
 
@@ -328,6 +353,20 @@ export default function BrandProfile() {
   useEffect(() => {
     fetchProfiles();
   }, [fetchProfiles]);
+
+  // Totals across active profiles, for the summary tiles
+  const summary = useMemo(() => {
+    const active = profiles.filter((p) => p.isActive !== false);
+    return {
+      total: profiles.length,
+      active: active.length,
+      guidelines: active.reduce(
+        (sum, p) => sum + (p.guidelines || []).filter((g) => g.active !== false).length,
+        0
+      ),
+      flaggedTerms: active.reduce((sum, p) => sum + countOf(p.termsRequiringReview), 0),
+    };
+  }, [profiles]);
 
   /* ----- Form handlers ----- */
 
@@ -445,135 +484,191 @@ export default function BrandProfile() {
         {error && <Alert tone="error">{error}</Alert>}
         {notice && <Alert tone="success">{notice}</Alert>}
 
-        {/* Form */}
-        <Card title={editingId ? 'Edit brand profile' : 'Create brand profile'}>
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <FormSection title="Basics" description="Who the brand is and how it should sound.">
-              <div className="grid gap-4 lg:grid-cols-2">
-                <Field id="brand-name" label="Brand name">
-                  <input id="brand-name" name="name" className={inputClass} value={form.name} onChange={handleChange} required maxLength={120} />
-                </Field>
+        {/* Summary */}
+        <section aria-label="Brand profile summary" className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+          <SummaryTile
+            icon="profiles"
+            iconClass="bg-indigo-50 text-indigo-600"
+            label="Profiles"
+            value={summary.total}
+            caption="Saved in total"
+            loading={loading}
+          />
+          <SummaryTile
+            icon="shield"
+            iconClass="bg-emerald-50 text-emerald-600"
+            label="Active profiles"
+            value={summary.active}
+            caption="Used by AI checks"
+            loading={loading}
+          />
+          <SummaryTile
+            icon="rules"
+            iconClass="bg-violet-50 text-violet-600"
+            label="Active guidelines"
+            value={summary.guidelines}
+            caption="Across active profiles"
+            loading={loading}
+          />
+          <SummaryTile
+            icon="flag"
+            iconClass="bg-amber-50 text-amber-600"
+            label="Terms for review"
+            value={summary.flaggedTerms}
+            caption="Wording that triggers review"
+            loading={loading}
+          />
+        </section>
 
-                <Field id="brand-tone" label="Preferred tone of voice">
-                  <select id="brand-tone" name="toneOfVoice" className={inputClass} value={form.toneOfVoice} onChange={handleChange} required>
-                    <option value="">Select a tone...</option>
-                    {TONE_OPTIONS.map((tone) => (
-                      <option key={tone} value={tone}>{tone}</option>
-                    ))}
-                    <option value="custom">Custom tone...</option>
-                  </select>
-                  {form.toneOfVoice === 'custom' && (
-                    <input
-                      name="customTone"
-                      className={cx(inputClass, 'mt-2')}
-                      value={form.customTone}
+        <div className="grid items-start gap-6 lg:grid-cols-3">
+          {/* Editor */}
+          <Panel
+            eyebrow="Profile editor"
+            title={editingId ? 'Edit brand profile' : 'Create brand profile'}
+            description="Changes apply to every new AI check that uses this profile."
+            className="lg:col-span-2"
+          >
+            <form onSubmit={handleSubmit} className="space-y-8">
+              <FormSection title="Basics" description="Who the brand is and how it should sound.">
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <Field id="brand-name" label="Brand name">
+                    <input id="brand-name" name="name" className={inputClass} value={form.name} onChange={handleChange} required maxLength={120} />
+                  </Field>
+
+                  <Field id="brand-tone" label="Preferred tone of voice">
+                    <select id="brand-tone" name="toneOfVoice" className={inputClass} value={form.toneOfVoice} onChange={handleChange} required>
+                      <option value="">Select a tone...</option>
+                      {TONE_OPTIONS.map((tone) => (
+                        <option key={tone} value={tone}>{tone}</option>
+                      ))}
+                      <option value="custom">Custom tone...</option>
+                    </select>
+                    {form.toneOfVoice === 'custom' && (
+                      <input
+                        name="customTone"
+                        className={cx(inputClass, 'mt-2')}
+                        value={form.customTone}
+                        onChange={handleChange}
+                        placeholder="Enter a custom tone"
+                        aria-label="Custom tone of voice"
+                        required
+                      />
+                    )}
+                  </Field>
+
+                  <div className="xl:col-span-2">
+                    <Field id="brand-description" label="Brand description">
+                      <textarea id="brand-description" name="description" rows={3} className={inputClass} value={form.description} onChange={handleChange} required maxLength={2000} />
+                    </Field>
+                  </div>
+                </div>
+              </FormSection>
+
+              <FormSection title="Language rules" description="Wording the AI should encourage or flag.">
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <Field id="preferred-terminology" label="Preferred terminology" hint={TERMINOLOGY_HELP}>
+                    <textarea
+                      id="preferred-terminology"
+                      name="preferredTerminology"
+                      rows={3}
+                      className={inputClass}
+                      value={form.preferredTerminology}
                       onChange={handleChange}
-                      placeholder="Enter a custom tone"
-                      aria-label="Custom tone of voice"
-                      required
+                      placeholder="customers, designed to help, evidence-based"
                     />
-                  )}
-                </Field>
-
-                <div className="lg:col-span-2">
-                  <Field id="brand-description" label="Brand description">
-                    <textarea id="brand-description" name="description" rows={3} className={inputClass} value={form.description} onChange={handleChange} required maxLength={2000} />
+                  </Field>
+                  <Field id="review-terms" label="Terms requiring review" hint={REVIEW_TERMS_HELP}>
+                    <textarea
+                      id="review-terms"
+                      name="termsRequiringReview"
+                      rows={3}
+                      className={inputClass}
+                      value={form.termsRequiringReview}
+                      onChange={handleChange}
+                      placeholder="guarantees, 100% success, cheapest, risk-free"
+                    />
                   </Field>
                 </div>
-              </div>
-            </FormSection>
+              </FormSection>
 
-            <FormSection title="Language rules" description="Wording the AI should encourage or flag.">
-              <div className="grid gap-4 lg:grid-cols-2">
-                <Field id="preferred-terminology" label="Preferred terminology" hint={TERMINOLOGY_HELP}>
-                  <textarea
-                    id="preferred-terminology"
-                    name="preferredTerminology"
-                    rows={3}
-                    className={inputClass}
-                    value={form.preferredTerminology}
-                    onChange={handleChange}
-                    placeholder="customers, designed to help, evidence-based"
-                  />
-                </Field>
-                <Field id="review-terms" label="Terms requiring review" hint={REVIEW_TERMS_HELP}>
-                  <textarea
-                    id="review-terms"
-                    name="termsRequiringReview"
-                    rows={3}
-                    className={inputClass}
-                    value={form.termsRequiringReview}
-                    onChange={handleChange}
-                    placeholder="guarantees, 100% success, cheapest, risk-free"
-                  />
-                </Field>
-              </div>
-            </FormSection>
+              <FormSection
+                title="Official brand guidelines"
+                description="Active rules are included with this profile during every advertisement AI check."
+                actions={<Button size="sm" variant="secondary" onClick={addGuideline}>Add guideline</Button>}
+              >
+                {form.guidelines.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
+                    No additional rules. Tone and terminology above are still included in AI checks.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {form.guidelines.map((guideline, index) => (
+                      <GuidelineEditor
+                        key={guideline._id || `new-${index}`}
+                        guideline={guideline}
+                        index={index}
+                        onChange={handleGuidelineChange}
+                        onRemove={removeGuideline}
+                      />
+                    ))}
+                  </div>
+                )}
+              </FormSection>
 
-            <FormSection
-              title="Official brand guidelines"
-              description="Active rules are included with this profile during every advertisement AI check."
-              actions={<Button size="sm" variant="secondary" onClick={addGuideline}>Add guideline</Button>}
-            >
-              {form.guidelines.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-                  No additional rules. Tone and terminology above are still included in AI checks.
+              <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-6">
+                <Button type="submit" disabled={saving}>
+                  {saving ? 'Saving...' : editingId ? 'Update brand profile' : 'Save brand profile'}
+                </Button>
+                {editingId && (
+                  <Button variant="secondary" onClick={resetForm}>Cancel</Button>
+                )}
+              </div>
+            </form>
+          </Panel>
+
+          {/* Side column */}
+          <div className="space-y-6">
+            <Panel eyebrow="Library" title="Saved profiles" description="Select a profile to edit it.">
+              {loading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-24 w-full" />
                 </div>
+              ) : profiles.length === 0 ? (
+                <EmptyState
+                  title="No brand profiles yet"
+                  description="Save your first profile so ads can be checked against it."
+                />
               ) : (
-                <div className="space-y-4">
-                  {form.guidelines.map((guideline, index) => (
-                    <GuidelineEditor
-                      key={guideline._id || `new-${index}`}
-                      guideline={guideline}
-                      index={index}
-                      onChange={handleGuidelineChange}
-                      onRemove={removeGuideline}
+                <ul className="space-y-3">
+                  {profiles.map((profile) => (
+                    <ProfileListItem
+                      key={profile._id}
+                      profile={profile}
+                      selected={profile._id === editingId}
+                      onEdit={handleEdit}
+                      onToggleActive={handleActiveToggle}
                     />
                   ))}
-                </div>
+                </ul>
               )}
-            </FormSection>
+            </Panel>
 
-            <div className="flex flex-wrap gap-3 border-t border-slate-200 pt-6">
-              <Button type="submit" disabled={saving}>
-                {saving ? 'Saving...' : editingId ? 'Update brand profile' : 'Save brand profile'}
-              </Button>
-              {editingId && (
-                <Button variant="secondary" onClick={resetForm}>Cancel</Button>
-              )}
-            </div>
-          </form>
-        </Card>
-
-        {/* Saved profiles */}
-        <section aria-labelledby="saved-profiles-heading">
-          <h2 id="saved-profiles-heading" className="mb-4 text-lg font-semibold text-slate-900">
-            Saved brand profiles
-          </h2>
-
-          {loading ? (
-            <p className="text-sm text-slate-500">Loading brand profiles...</p>
-          ) : profiles.length === 0 ? (
-            <Card padded={false}>
-              <EmptyState
-                title="No brand profiles yet"
-                description="Save your first profile above so ads can be checked against it."
-              />
-            </Card>
-          ) : (
-            <div className="grid gap-4 xl:grid-cols-2">
-              {profiles.map((profile) => (
-                <ProfileCard
-                  key={profile._id}
-                  profile={profile}
-                  selected={profile._id === editingId}
-                  onEdit={handleEdit}
-                  onToggleActive={handleActiveToggle}
-                />
-              ))}
-            </div>
-          )}
-        </section>
+            <Panel eyebrow="Guide" title="How checks use a profile">
+              <ul className="space-y-4">
+                {HOW_IT_WORKS.map(({ dot, title, text }) => (
+                  <li key={title} className="flex items-start gap-3">
+                    <span className={cx('mt-1.5 h-2 w-2 shrink-0 rounded-full', dot)} aria-hidden="true" />
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{title}</p>
+                      <p className="text-sm text-slate-500">{text}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          </div>
+        </div>
       </div>
     </MainLayout>
   );
